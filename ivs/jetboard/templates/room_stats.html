@@ -1,0 +1,83 @@
+{% extends "django_tabler/base.html" %}
+{% block extra_js %}
+
+<script>
+var intervalID;
+function request_server() {
+    // run ajax request
+    console.log('requesting status from test.progress');
+
+    var room = document.getElementById("room").value;
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            console.log('xhttp response = '+this.responseText);
+            var b = JSON.parse(this.responseText);
+            if (b.active) {
+                document.getElementById("room_title").innerHTML = b.room + "&nbsp <span class='status-icon bg-success'></span>";
+            } else {
+                document.getElementById("room_title").innerHTML = b.room + "&nbsp <span class='status-icon bg-danger'></span>";
+            }
+            document.getElementById("peoplecount").innerHTML = b.current_pc;
+            if (b.streaming) {
+                document.getElementById("room_title").innerHTML += "&nbsp <div class='badge bg-green-light'>STREAMING</div>";
+            } else {
+                document.getElementById("room_title").innerHTML += "&nbsp <div class='badge bg-gray-light'>IDLE</div>";
+            }
+            document.getElementById("zones").innerHTML = b.zones;
+            //clearInterval(intervalID);
+        }
+    };
+    xhttp.open("GET","/jetboard/refreshRoomStats/?"+room, true);
+    xhttp.send();
+}
+
+
+function onload() {
+    intervalID = setInterval(request_server, 1000);
+    //intervalID = setTimeout(request_server, 1000);
+}
+
+window.onload = onload();
+
+</script>
+
+
+
+{% endblock %}
+{% block content %}
+{% load static %}
+
+<input type="hidden" id="room" name="room" value="{{room}}">
+
+<div class="header py-4">
+    <div class="container">
+        <div class="d-flex">
+            <a class="header-brand" href="/jetboard/">
+                <img class="header-brand-img" src="{% static 'img/crash_test_dummy.png' %}">
+            </a>
+            <h1 class="page-title" id="room_title"></h1>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="col-6 col-sm-4">
+      <div class="card">
+        <div class="card-body p-2 text-center">
+          <div class="h1 m-0" id="peoplecount"></div>
+          <div class="text-muted mb-4">Occupancy</div>
+        </div>
+      </div>
+    </div>
+</div>
+<div class="container">
+    <div class="col-6 col-sm-4">
+        <div class="card" id="zones">
+        </div>
+    </div>
+</div>
+
+<div id="streaming"></div>
+
+
+{% endblock %} 

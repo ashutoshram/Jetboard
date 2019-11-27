@@ -1,0 +1,123 @@
+{% extends "django_tabler/base.html" %}
+{% load static %}
+{% block extra_js %}
+<script>
+var intervalID;
+function request_server() {
+    // run ajax request
+    console.log('requesting status from refreshHomeTable ');
+
+    var rooms = JSON.parse(document.getElementById('rooms').textContent);
+    rooms = '[' + rooms + ']';
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            var b = JSON.parse(this.responseText);
+            var length = b.rooms.length;
+            table = document.getElementById("table_body");
+            for (i=0; i<length; i++){
+                room = b.rooms[i]; 
+                pc_name = room[0] + "_pc";
+                bs_name = room[0] + "_bs";
+                rs_name = room[0] + "_rs";
+                av_name = room[0] + "_av";
+                    
+                if (room[3] == 1){
+                    document.getElementById(av_name).innerHTML = "<span class='status-icon bg-success'></span>" + room[0];
+                } else {
+                    document.getElementById(av_name).innerHTML = "<span class='status-icon bg-danger'></span>" + room[0];
+                }
+
+                if (room[2] == 1){
+                    document.getElementById(bs_name).innerHTML = "<div class='badge bg-green-light'>STREAMING</div>";
+                } else {
+                    document.getElementById(bs_name).innerHTML ="<div class='badge bg-gray-light'>IDLE</div>";
+                }
+
+                document.getElementById(rs_name).innerHTML = "<a href='room_stats/"+ room[0] +"' class='btn btn-gray-dark'>Detailed Room Stats</a>";
+                document.getElementById(pc_name).innerHTML = room[1];
+            }
+        }
+    };
+    xhttp.open("GET","/jetboard/refreshHomeTable/?"+rooms, true);
+    xhttp.send();
+}
+
+
+function onload() {
+    createTableEntries();
+    intervalID = setInterval(request_server, 1000);
+}
+
+
+function createTableEntries() {
+    var rooms = JSON.parse(document.getElementById('rooms').textContent);
+    console.log(rooms);
+    var table = document.getElementById('table_body');
+    if (rooms.length = 0) {
+        console.log("No rooms to fill table");
+    } else {
+    for (i=0; i<rooms.length; i++) {
+        trow = document.createElement('tr');
+        trow.id = rooms[i];
+        console.log(trow.id);
+        avatarColumn = document.createElement('td');
+        avatar = document.createElement('span');
+        avatarColumn.id = rooms[i] + "_av";  
+        peopleCount = document.createElement('td');
+        peopleCount.id = rooms[i] + "_pc";  
+        busyStatus = document.createElement('td');
+        busyStatus.id = rooms[i] + "_bs";  
+        roomStats = document.createElement('td');
+        roomStats.id = rooms[i] + "_rs";  
+        trow.appendChild(avatarColumn);
+        trow.appendChild(avatar);
+        trow.appendChild(peopleCount);
+        trow.appendChild(busyStatus);
+        trow.appendChild(roomStats);
+        table.append(trow);
+        }
+    }
+}
+window.onload = onload();
+
+</script>
+
+
+{% endblock %}
+{% block content %}
+
+{{ roomslist|json_script:"rooms" }}
+
+
+
+<div class="header py-4">
+    <div class="container">
+        <div class="d-flex">
+            <a class="header-brand" href="/jetboard/">
+                <img class="header-brand-img" src="{% static 'img/crash_test_dummy.png' %}">
+            </a>
+            <h1 class="page-title">IVS Dashboard</h1>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table card-table table-vcenter" id="table">
+                <thead>
+                      <tr>
+                        <th colspan="2">Room</th>
+                        <th>People Count</th>
+                        <th>Camera Status</th>
+                        <th>Dashboard</th>
+                      </tr>
+                </thead>
+                <tbody id="table_body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
